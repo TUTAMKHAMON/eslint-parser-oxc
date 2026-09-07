@@ -8,15 +8,32 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readdirSync, rmSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, readdirSync, rmSync, statSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 const repo = resolve(import.meta.dirname, '..');
 const scratch = mkdtempSync(join(tmpdir(), 'eslint-parser-oxc-'));
 
+/**
+ * npm exports its own configuration into lifecycle scripts as `npm_config_*`,
+ * so a nested npm command silently inherits the *outer* command's flags. This
+ * script runs from `prepublishOnly`, which means that under
+ * `npm publish --dry-run` every npm call below would inherit
+ * `npm_config_dry_run=true`: `npm pack` prints a filename without writing the
+ * file, and the install turns into a no-op. Stripping the injected config makes
+ * the child commands behave as they would from a fresh shell.
+ *
+ * Only npm's lowercase lifecycle variables are removed. The uppercase
+ * `NPM_CONFIG_USERCONFIG` that actions/setup-node sets is a real user setting
+ * and is left in place.
+ */
+const CLEAN_ENV = Object.fromEntries(
+  Object.entries(process.env).filter(([key]) => !key.startsWith('npm_config_')),
+);
+
 const run = (command, args, cwd) =>
-  execFileSync(command, args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] });
+  execFileSync(command, args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'], env: CLEAN_ENV });
 
 try {
   console.log('Building…');
@@ -24,6 +41,15 @@ try {
 
   console.log('Packing…');
   const tarball = run('npm', ['pack', '--pack-destination', scratch], repo).trim().split('\n').pop();
+
+  // `npm pack` reports the filename it would write even when it writes nothing,
+  // so the file is checked rather than assumed; otherwise the failure surfaces
+  // three steps later as an unexplained ENOENT from `npm install`.
+  const packed = join(scratch, tarball);
+  if (!existsSync(packed)) {
+    throw new Error(`npm pack reported ${tarball} but wrote no file to ${scratch}`);
+  }
+  console.log(`Packed ${tarball} (${(statSync(packed).size / 1024).toFixed(1)} kB)`);
 
   writeFileSync(
     join(scratch, 'package.json'),
@@ -33,7 +59,7 @@ try {
         private: true,
         version: '0.0.0',
         type: 'module',
-        dependencies: { eslint: '9.39.5', 'eslint-parser-oxc': `file:${join(scratch, tarball)}` },
+        dependencies: { eslint: '9.39.5', 'eslint-parser-oxc': `file:${packed}` },
       },
       null,
       2,
