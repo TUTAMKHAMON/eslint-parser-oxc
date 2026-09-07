@@ -1,11 +1,19 @@
 name: Release
 
 # Publishing is driven by a tag: `git tag v0.1.0 && git push origin v0.1.0`.
-# `workflow_dispatch` is there for a re-run when a publish fails partway.
+#
+# `workflow_dispatch` runs the same pipeline on demand and defaults to a dry
+# run, so the whole thing — including registry authentication — can be proved
+# out before a tag is pushed and a version number is spent for good.
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run every check and pack the tarball, but do not upload it'
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -62,9 +70,31 @@ jobs:
       - name: Differential rule and --fix test
         run: node conformance/lint.mjs conformance/.corpus --fix
 
+      - name: Check the registry credential is present
+        run: |
+          if [ -z "${NODE_AUTH_TOKEN}" ]; then
+            echo "NPM_TOKEN is not set on this repository." >&2
+            echo "Create an npm granular access token with write access to packages," >&2
+            echo "then: gh secret set NPM_TOKEN" >&2
+            exit 1
+          fi
+          npm whoami
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       # `prepublishOnly` runs the build, typecheck, lint, unit tests and the
       # packaged no-typescript check before the tarball is uploaded.
       - name: Publish to npm
-        run: npm publish --provenance --access public
+        run: npm publish --provenance --access public ${{ inputs.dry_run && '--dry-run' || '' }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Summary
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "### Dry run of eslint-parser-oxc@$version — nothing was uploaded" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### Published eslint-parser-oxc@$version" >> "$GITHUB_STEP_SUMMARY"
+            echo "https://www.npmjs.com/package/eslint-parser-oxc/v/$version" >> "$GITHUB_STEP_SUMMARY"
+          fi

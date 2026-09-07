@@ -265,6 +265,11 @@ npm version patch   # or minor / major — writes package.json and tags
 git push --follow-tags
 ```
 
+To rehearse the whole pipeline without spending a version number, run the
+Release workflow manually from the Actions tab — `dry_run` defaults to true, so
+it verifies the registry credential, runs every check and packs the tarball
+without uploading it.
+
 Pushing a `v*` tag runs [`.github/workflows/release.yml`](./.github/workflows/release.yml),
 which refuses to continue if the tag and `package.json` disagree, runs the full
 differential suite against the reference parser, and then publishes with
