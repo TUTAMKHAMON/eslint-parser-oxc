@@ -253,6 +253,28 @@ When a conformance run reports a token mismatch, `node conformance/tokens.mjs
 `node conformance/reference/probe.mjs '[["case", "code", false]]'` prints what
 the reference parser makes of an arbitrary snippet.
 
+## Releasing
+
+Releases are published from CI, never from a laptop, so every tarball on npm
+carries a [provenance
+attestation](https://docs.npmjs.com/generating-provenance-statements) tying it
+to the commit and the workflow run that built it.
+
+```bash
+npm version patch   # or minor / major — writes package.json and tags
+git push --follow-tags
+```
+
+Pushing a `v*` tag runs [`.github/workflows/release.yml`](./.github/workflows/release.yml),
+which refuses to continue if the tag and `package.json` disagree, runs the full
+differential suite against the reference parser, and then publishes with
+`--provenance`. `prepublishOnly` runs the build, typecheck, lint, unit tests and
+the packaged no-`typescript` check as a last gate before upload.
+
+The release gate is deliberately stricter than the pull-request gate: this
+parser's contract is that its output is identical to typescript-eslint's, so
+that is what has to hold before a version ships.
+
 ## License
 
 MIT — see [LICENSE](./LICENSE).
