@@ -48,15 +48,16 @@
   },
   "scripts": {
     "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
     "test": "vitest run",
     "conformance": "node conformance/run.mjs",
+    "conformance:corpus": "node conformance/fetch-corpus.mjs",
     "conformance:snapshot": "node conformance/snapshot.mjs",
+    "conformance:lint": "node conformance/lint.mjs",
     "bench": "node bench/run.mjs",
     "verify:packaged": "node scripts/verify-packaged.mjs",
-    "conformance:lint": "node conformance/lint.mjs",
-    "conformance:corpus": "node conformance/fetch-corpus.mjs",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "prepublishOnly": "npm run build && npm run typecheck && npm run lint && npm test && npm run verify:packaged"
   },
   "dependencies": {
     "@typescript-eslint/scope-manager": "^8.69.0",

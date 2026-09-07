@@ -15,6 +15,8 @@ shaped AST.
 npm install --save-dev eslint-parser-oxc
 ```
 
+Requires Node 20.19+, 22.12+ or 24+, and ESLint 9 or 10 as a peer.
+
 Runtime dependencies: `oxc-parser`, `@typescript-eslint/scope-manager`,
 `@typescript-eslint/visitor-keys`. None of them load `typescript` — the
 `@typescript-eslint` packages import it only in `.d.ts` files, and
