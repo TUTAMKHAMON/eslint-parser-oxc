@@ -1,0 +1,43 @@
+{
+  "type-only import used in a type position": [],
+  "type-only import that nothing references": [
+    "1:15:1:21 no-unused-vars 'Unused' is defined but never used."
+  ],
+  "inline type specifier used only in a generic": [],
+  "enum, namespace and satisfies references": [
+    "1:18:1:20 no-unused-vars 'Up' is defined but never used.",
+    "1:22:1:26 no-unused-vars 'Down' is defined but never used."
+  ],
+  "declaration merging of a function and a namespace": [
+    "2:11:2:17 no-redeclare 'merged' is already defined."
+  ],
+  "interface declaration merging": [
+    "2:11:2:17 no-redeclare 'Merged' is already defined."
+  ],
+  "function overloads": [
+    "1:28:1:37 no-unused-vars 'a' is defined but never used.",
+    "2:17:2:27 no-redeclare 'overloaded' is already defined.",
+    "2:28:2:37 no-unused-vars 'a' is defined but never used.",
+    "3:17:3:27 no-redeclare 'overloaded' is already defined."
+  ],
+  "generic type parameters are not undefined values": [],
+  "undeclared value is still reported": [
+    "1:18:1:37 no-undef 'notDeclaredAnywhere' is not defined."
+  ],
+  "shadowing in a nested block": [
+    "2:9:2:17 no-shadow 'shadowed' is already declared in the upper scope on line 1 column 23."
+  ],
+  "type used before its alias is declared": [],
+  "decorators reference their imports": [],
+  "import x = require()": [],
+  "using and await using declarations": [],
+  "ambient declarations in a .d.ts file": [
+    "2:27:2:36 no-unused-vars 'a' is defined but never used."
+  ],
+  "JSX pragma keeps React referenced": [],
+  "const enum and declare enum": [
+    "1:26:1:28 no-unused-vars 'On' is defined but never used.",
+    "2:14:2:21 no-unused-vars 'Ambient' is defined but never used.",
+    "2:24:2:25 no-unused-vars 'X' is defined but never used."
+  ]
+}

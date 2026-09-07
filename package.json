@@ -1,0 +1,75 @@
+{
+  "name": "eslint-parser-oxc",
+  "version": "0.1.0",
+  "description": "ESLint custom parser backed by oxc-parser. Parses JS, JSX, TS and TSX for syntax-only rules with no `typescript` dependency.",
+  "keywords": [
+    "eslint",
+    "eslintparser",
+    "oxc",
+    "typescript",
+    "parser",
+    "estree"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "DIVERGENCES.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": "^20.19.0 || ^22.12.0 || >=24"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run",
+    "conformance": "node conformance/run.mjs",
+    "conformance:snapshot": "node conformance/snapshot.mjs",
+    "bench": "node bench/run.mjs",
+    "verify:packaged": "node scripts/verify-packaged.mjs",
+    "conformance:lint": "node conformance/lint.mjs",
+    "conformance:corpus": "node conformance/fetch-corpus.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@typescript-eslint/scope-manager": "^8.69.0",
+    "@typescript-eslint/visitor-keys": "^8.69.0",
+    "oxc-parser": "0.148.0"
+  },
+  "peerDependencies": {
+    "eslint": "^9.0.0 || ^10.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^8.0.1",
+    "@babel/eslint-parser": "^8.0.1",
+    "@babel/preset-react": "^8.0.1",
+    "@babel/preset-typescript": "^8.0.1",
+    "@types/node": "^24.10.1",
+    "eslint": "9.39.5",
+    "eslint-plugin-import-x": "^4.17.1",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
+    "espree": "^10.4.0",
+    "tsdown": "^0.23.0",
+    "typescript": "6.0.3",
+    "vitest": "^5.0.0"
+  }
+}

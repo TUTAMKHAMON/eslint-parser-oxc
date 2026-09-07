@@ -1,0 +1,15 @@
+node_modules/
+dist/
+conformance/.corpus/
+conformance/.snapshots/
+conformance/.snapshots-corpus/
+conformance/.lint-*.json
+conformance/.fix-mismatches.json
+bench/results.txt
+spike/
+*.tgz
+
+# Editors
+.idea/
+.vscode/
+.DS_Store

@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+
+  conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+      # The reference parser is a separate install so that `typescript` is never
+      # resolvable from the package under test.
+      - run: npm install --no-audit --no-fund
+        working-directory: conformance/reference
+
+      - name: Fetch the external corpora
+        run: npm run conformance:corpus
+
+      - name: Snapshot the reference parse
+        run: npm run conformance:snapshot
+
+      - name: Differential AST test — in-repo fixtures
+        run: node conformance/run.mjs
+
+      - name: Differential AST test — external corpus
+        run: >
+          node conformance/run.mjs
+          --snapshots conformance/.snapshots-corpus
+          --strictness conformance/strictness-corpus.json
+          --verbose
+
+      - name: Differential rule and --fix test
+        run: node conformance/lint.mjs conformance/.corpus --fix
+
+      - name: Parser works with no typescript installed
+        run: npm run verify:packaged
