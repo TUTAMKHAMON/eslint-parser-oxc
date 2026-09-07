@@ -50,6 +50,10 @@ console.log(`eslint-parser-oxc: ${summary.findings} findings over ${summary.file
 const reference = JSON.parse(readFileSync(referenceOut, 'utf8'));
 const ours = JSON.parse(readFileSync(oursOut, 'utf8'));
 
+if (Object.keys(reference.byFile).length === 0) {
+  throw new Error(`No files were linted under ${corpus}; a passing run would mean nothing.`);
+}
+
 // Findings only mean anything where both parsers produced an AST. A file either
 // side rejected is counted and reported separately.
 const comparable = Object.keys(reference.byFile).filter(

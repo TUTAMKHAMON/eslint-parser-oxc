@@ -1,10 +1,18 @@
 /**
  * HTML named character references recognised inside JSX.
  *
- * This is the same 253-entry set TypeScript's JSX scanner uses (the HTML 4
- * named entities), so entity decoding matches typescript-estree exactly. A name
- * that is not in this table is left in the text verbatim, which is also what
- * TypeScript does.
+ * These are the HTML 4 named character references, as defined by the W3C. The
+ * particular 253-entry subset — and so which names JSX decodes and which it
+ * leaves verbatim — is the one TypeScript's JSX scanner uses, taken from the
+ * `entities` map in TypeScript's `scanner.ts` and reformatted as a TypeScript
+ * object. Matching that set exactly is what makes `JSXText.value` and JSX
+ * attribute values identical to typescript-estree's.
+ *
+ * TypeScript is Copyright (c) Microsoft Corporation and licensed under
+ * Apache-2.0. See THIRD-PARTY-NOTICES.md.
+ *
+ * A name that is not in this table is left in the text verbatim, which is also
+ * what TypeScript does.
  */
 
 export const HTML_ENTITIES: Record<string, number> = {

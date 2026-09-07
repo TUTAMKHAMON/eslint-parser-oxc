@@ -39,6 +39,7 @@ try {
 }
 const observedStrictness = {};
 const { corpus, files } = JSON.parse(readFileSync(join(snapshotDir, 'index.json'), 'utf8'));
+if (files.length === 0) throw new Error(`No snapshots in ${snapshotDir}; nothing to compare.`);
 
 const parser = await import('../dist/index.mjs');
 
@@ -128,6 +129,8 @@ if (updateStrictness) {
   writeFileSync(strictnessFile, `${JSON.stringify(sorted, null, 2)}\n`);
   console.log(`\nWrote ${Object.keys(sorted).length} entries to ${strictnessFile}`);
 }
+
+if (compared === 0) throw new Error('No files were compared; a passing run would mean nothing.');
 
 const comparable = compared - referenceRejected.length - stricterThanReference.length;
 console.log(`\n${identical}/${comparable} comparable files identical to the reference AST.`);

@@ -253,4 +253,11 @@ the reference parser makes of an arbitrary snippet.
 
 ## License
 
-MIT
+MIT — see [LICENSE](./LICENSE).
+
+The HTML entity table in `src/html-entities.ts` is derived from TypeScript
+(Apache-2.0); the differential suite downloads source from five other projects
+at test time without vendoring any of it. Both are covered in
+[THIRD-PARTY-NOTICES.md](./THIRD-PARTY-NOTICES.md).
+
+Contributions are accepted under the same MIT license as the project.

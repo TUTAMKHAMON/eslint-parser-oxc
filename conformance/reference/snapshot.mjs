@@ -19,6 +19,12 @@ const outDir = resolve(outArg ?? join(import.meta.dirname, '..', '.snapshots'));
 const limit = Number(process.argv[5] ?? Infinity);
 
 const files = collect(corpus, { maxFiles: limit });
+if (files.length === 0) {
+  // Otherwise every later step reports a perfect score over nothing.
+  throw new Error(`No parseable files under ${corpus}. Run \`npm run conformance:corpus\` first.`);
+}
+
+mkdirSync(outDir, { recursive: true });
 const index = [];
 
 for (const relPath of files) {

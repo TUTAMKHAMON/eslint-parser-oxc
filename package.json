@@ -11,6 +11,14 @@
     "estree"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TUTAMKHAMON/eslint-parser-oxc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/TUTAMKHAMON/eslint-parser-oxc/issues"
+  },
+  "homepage": "https://github.com/TUTAMKHAMON/eslint-parser-oxc#readme",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -32,6 +40,7 @@
     "dist",
     "README.md",
     "DIVERGENCES.md",
+    "THIRD-PARTY-NOTICES.md",
     "LICENSE"
   ],
   "engines": {
