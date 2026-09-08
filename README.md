@@ -255,13 +255,14 @@ the reference parser makes of an arbitrary snippet.
 
 ## Releasing
 
-Releases are published from CI, never from a laptop, so every tarball on npm
-carries a [provenance
+Releases are published from CI via [trusted
+publishing](https://docs.npmjs.com/trusted-publishers/) — there is no npm token
+anywhere in this repository — and every tarball carries a [provenance
 attestation](https://docs.npmjs.com/generating-provenance-statements) tying it
-to the commit and the workflow run that built it.
+to the commit and workflow run that built it.
 
-Publishing a GitHub release is what triggers it, so the release notes and the
-npm version are the same act:
+Publishing a GitHub release triggers
+[`.github/workflows/release.yml`](./.github/workflows/release.yml):
 
 ```bash
 npm version patch          # or minor / major — bumps package.json and commits
@@ -269,20 +270,24 @@ git push --follow-tags
 gh release create v0.1.1 --generate-notes
 ```
 
-To rehearse the whole pipeline without spending a version number, run the
-Release workflow manually from the Actions tab — `dry_run` defaults to true, so
-it verifies the registry credential, runs every check and packs the tarball
-without uploading it.
+The workflow verifies the release tag against `package.json`, runs the full
+differential suite against the reference parser, and then **stages** the release
+rather than publishing it. Staging is deliberate: the trusted publisher is
+configured stage-only, so a compromised workflow run cannot put anything on the
+registry by itself. A maintainer approves the tarball with 2FA:
 
-[`.github/workflows/release.yml`](./.github/workflows/release.yml) refuses to
-continue if the release tag and `package.json` disagree, runs the full
-differential suite against the reference parser, and then publishes with
-`--provenance`. `prepublishOnly` runs the build, typecheck, lint, unit tests and
-the packaged no-`typescript` check as a last gate before upload.
+```bash
+npm stage list eslint-parser-oxc
+npm stage view <stage-id>       # inspect what would go live
+npm stage approve <stage-id>
+```
 
-A release marked as a prerelease publishes under the `next` dist-tag rather than
-`latest`, so it never becomes what a plain `npm install eslint-parser-oxc`
-resolves to.
+To rehearse, run the Release workflow manually from the Actions tab; `dry_run`
+defaults to true. It only works against a version not yet on the registry, so
+bump `package.json` first.
+
+A release marked as a prerelease is staged under the `next` dist-tag, so it
+never becomes what a plain `npm install eslint-parser-oxc` resolves to.
 
 The release gate is deliberately stricter than the pull-request gate: this
 parser's contract is that its output is identical to typescript-eslint's, so

@@ -7,8 +7,10 @@ name: Release
 # that already exists.
 #
 # `workflow_dispatch` runs the same pipeline on demand and defaults to a dry
-# run, so the whole thing — including registry authentication — can be proved
-# out before a release is published and a version number is spent for good.
+# run, so the whole thing — including the OIDC exchange with the registry — can
+# be proved out before a release is published. Note that a dry run only works
+# against a version that is not on the registry yet: bump `package.json` first,
+# rehearse, then cut the release.
 on:
   release:
     types: [published]
@@ -21,12 +23,11 @@ on:
 
 permissions:
   contents: read
-  # Required for npm provenance: the job mints a short-lived OIDC token that
-  # Sigstore uses to attest the tarball came from this workflow and commit.
-  id-token: write
 
 jobs:
-  publish:
+  # The expensive checks run first and without the environment, so the reviewer
+  # who approves the publish is approving a build that has already passed.
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -34,7 +35,6 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          registry-url: https://registry.npmjs.org
 
       - run: npm ci
 
@@ -76,23 +76,53 @@ jobs:
       - name: Differential rule and --fix test
         run: node conformance/lint.mjs conformance/.corpus --fix
 
-      - name: Check the registry credential is present
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    # Must match the environment name in the npm trusted publisher config: npm
+    # checks the `environment` claim on the OIDC token, and a mismatch is
+    # rejected rather than silently ignored. The environment's protection rules
+    # gate the commit; npm's staged publishing then gates the tarball.
+    environment: npm-publish
+    permissions:
+      contents: read
+      # Trusted publishing: the job mints a short-lived OIDC token that npm
+      # exchanges for publish rights, and Sigstore uses to attest the tarball
+      # came from this workflow and commit. There is no npm token anywhere.
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+
+      - name: Check npm is new enough for staged publishing
         run: |
-          if [ -z "${NODE_AUTH_TOKEN}" ]; then
-            echo "NPM_TOKEN is not set on this repository." >&2
-            echo "Create an npm granular access token with write access to packages," >&2
-            echo "then: gh secret set NPM_TOKEN" >&2
+          version="$(npm --version)"
+          major="${version%%.*}"
+          rest="${version#*.}"
+          minor="${rest%%.*}"
+          if [ "$major" -lt 11 ] || { [ "$major" -eq 11 ] && [ "$minor" -lt 15 ]; }; then
+            echo "npm $version is too old for staged publishing; 11.15.0+ is required." >&2
             exit 1
           fi
-          npm whoami
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          echo "npm $version"
 
-      # `prepublishOnly` runs the build, typecheck, lint, unit tests and the
-      # packaged no-typescript check before the tarball is uploaded.
-      - name: Publish to npm
+      # `npm stage publish`, not `npm publish`: the trusted publisher is
+      # configured stage-only, so a direct publish from here is rejected by the
+      # registry. The tarball lands in the stage queue and goes live only once a
+      # maintainer approves it with 2FA — which means a compromised run of this
+      # workflow cannot put anything on the registry by itself.
+      #
+      # `prepublishOnly` fires for `npm stage publish` exactly as it does for
+      # `npm publish`, so the build, typecheck, lint, unit tests and packaged
+      # no-typescript check all still run before the tarball is produced.
+      - name: Stage the release on npm
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           # A release marked as a prerelease goes out under `next`, so it never
           # becomes what a plain `npm install eslint-parser-oxc` resolves to.
           DIST_TAG: ${{ github.event.release.prerelease && 'next' || 'latest' }}
@@ -100,7 +130,7 @@ jobs:
         run: |
           args=(--provenance --access public --tag "$DIST_TAG")
           if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi
-          npm publish "${args[@]}"
+          npm stage publish "${args[@]}"
 
       - name: Summary
         env:
@@ -109,9 +139,19 @@ jobs:
         run: |
           version="$(node -p "require('./package.json').version")"
           if [ "$DRY_RUN" = "true" ]; then
-            echo "### Dry run of eslint-parser-oxc@$version — nothing was uploaded" >> "$GITHUB_STEP_SUMMARY"
+            echo "### Dry run of eslint-parser-oxc@$version — nothing was staged" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "### Published eslint-parser-oxc@$version under the \`$DIST_TAG\` tag" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "https://www.npmjs.com/package/eslint-parser-oxc/v/$version" >> "$GITHUB_STEP_SUMMARY"
+            {
+              echo "### Staged eslint-parser-oxc@$version for the \`$DIST_TAG\` tag"
+              echo ""
+              echo "It is **not on the registry yet.** A maintainer has to approve it with 2FA:"
+              echo ""
+              echo '```bash'
+              echo "npm stage list eslint-parser-oxc"
+              echo "npm stage view <stage-id>       # inspect what would go live"
+              echo "npm stage approve <stage-id>"
+              echo '```'
+              echo ""
+              echo "Or approve it on https://www.npmjs.com/package/eslint-parser-oxc"
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
