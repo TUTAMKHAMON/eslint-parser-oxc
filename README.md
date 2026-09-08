@@ -260,9 +260,13 @@ carries a [provenance
 attestation](https://docs.npmjs.com/generating-provenance-statements) tying it
 to the commit and the workflow run that built it.
 
+Publishing a GitHub release is what triggers it, so the release notes and the
+npm version are the same act:
+
 ```bash
-npm version patch   # or minor / major — writes package.json and tags
+npm version patch          # or minor / major — bumps package.json and commits
 git push --follow-tags
+gh release create v0.1.1 --generate-notes
 ```
 
 To rehearse the whole pipeline without spending a version number, run the
@@ -270,11 +274,15 @@ Release workflow manually from the Actions tab — `dry_run` defaults to true, s
 it verifies the registry credential, runs every check and packs the tarball
 without uploading it.
 
-Pushing a `v*` tag runs [`.github/workflows/release.yml`](./.github/workflows/release.yml),
-which refuses to continue if the tag and `package.json` disagree, runs the full
+[`.github/workflows/release.yml`](./.github/workflows/release.yml) refuses to
+continue if the release tag and `package.json` disagree, runs the full
 differential suite against the reference parser, and then publishes with
 `--provenance`. `prepublishOnly` runs the build, typecheck, lint, unit tests and
 the packaged no-`typescript` check as a last gate before upload.
+
+A release marked as a prerelease publishes under the `next` dist-tag rather than
+`latest`, so it never becomes what a plain `npm install eslint-parser-oxc`
+resolves to.
 
 The release gate is deliberately stricter than the pull-request gate: this
 parser's contract is that its output is identical to typescript-eslint's, so
