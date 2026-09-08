@@ -1,6 +1,6 @@
 {
   "name": "eslint-parser-oxc",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "ESLint custom parser backed by oxc-parser. Parses JS, JSX, TS and TSX for syntax-only rules with no `typescript` dependency.",
   "keywords": [
     "eslint",
