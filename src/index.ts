@@ -11,6 +11,8 @@ import { analyze } from '@typescript-eslint/scope-manager';
 import { visitorKeys } from '@typescript-eslint/visitor-keys';
 import { parseSync } from 'oxc-parser';
 
+import packageJson from '../package.json' with { type: 'json' };
+
 import { scanAst, type OxcNode } from './ast.ts';
 import { throwIfFatal, type OxcError } from './errors.ts';
 import { LineTable } from './line-table.ts';
@@ -22,12 +24,13 @@ export type { ParserOptions, Lang, SourceType } from './options.ts';
 export type { Token, Comment } from './tokenizer.ts';
 export { OxcSyntaxError } from './errors.ts';
 
-/** Kept in step with `package.json` by `test/meta.test.ts`. */
-const VERSION = '0.1.0';
-
+/**
+ * ESLint shows this in messages about the parser. Read from `package.json` so a
+ * version bump cannot leave it stale — `test/meta.test.ts` guards the link.
+ */
 export const meta = {
-  name: 'eslint-parser-oxc',
-  version: VERSION,
+  name: packageJson.name,
+  version: packageJson.version,
 } as const;
 
 export interface Program extends OxcNode {
