@@ -1,5 +1,9 @@
 # eslint-parser-oxc
 
+[![npm](https://img.shields.io/npm/v/eslint-parser-oxc)](https://www.npmjs.com/package/eslint-parser-oxc)
+[![CI](https://github.com/TUTAMKHAMON/eslint-parser-oxc/actions/workflows/ci.yml/badge.svg)](https://github.com/TUTAMKHAMON/eslint-parser-oxc/actions/workflows/ci.yml)
+[![provenance](https://img.shields.io/badge/provenance-signed-brightgreen)](https://docs.npmjs.com/generating-provenance-statements)
+
 An ESLint 9/10 custom parser backed by [`oxc-parser`](https://oxc.rs), the
 Rust-based Oxc parser. It parses JavaScript, JSX, TypeScript and TSX for
 **syntax-only rules**, and it does not depend on `typescript` at runtime.
@@ -156,7 +160,7 @@ documented exceptions, two of which are cases where this parser matches
 - **No Flow, Vue SFCs, Svelte or MDX.**
 - **`oxc-parser` is pinned to an exact version** and should stay that way. Its
   ESTree output is still moving; the conformance suite is what says whether a
-  bump is safe.
+  bump is safe — see [Bumping `oxc-parser`](#bumping-oxc-parser).
 
 ## Verification
 
@@ -198,6 +202,52 @@ The rule set is ESLint core recommended plus `eslint-plugin-react`,
 resolution-dependent `import-x` rules off. `--fix` adds `prefer-const`,
 `no-var`, `object-shorthand`, `dot-notation`, `arrow-body-style`,
 `no-extra-semi`, `import-x/order` and `import-x/newline-after-import`.
+
+### The strictness baseline
+
+`conformance/strictness-corpus.json` lists every corpus file that this parser
+rejects and the reference accepts, with the exact oxc message. It is checked in
+so that a *new* rejection fails the suite instead of being written off as "one
+of those". Regenerating it with `--update-strictness` accepts whatever the
+parser currently does, so it is only ever correct when you have read the diff
+and understood each new entry:
+
+```bash
+node conformance/run.mjs --snapshots conformance/.snapshots-corpus \
+  --strictness conformance/strictness-corpus.json --update-strictness
+```
+
+Legitimate reasons to regenerate: an upstream corpus moved to a new pinned ref,
+or oxc deliberately tightened a check and the new message is code TypeScript
+also rejects. Not a legitimate reason: the suite went red and the entry makes it
+green again. If a new entry is a file that *should* parse, that is a parser bug,
+and the baseline is what just told you so.
+
+### Bumping `oxc-parser`
+
+The pin is exact because oxc's ESTree output is still moving; the suite is what
+says whether a bump is safe. Nothing else in this repository will tell you.
+
+```bash
+npm i --save-exact oxc-parser@<version>
+npm run build
+npm run conformance:snapshot     # the reference does not change, but re-run it if
+                                 # @typescript-eslint/parser moved too
+npm run conformance              # in-repo fixtures
+node conformance/run.mjs --snapshots conformance/.snapshots-corpus \
+  --strictness conformance/strictness-corpus.json
+node conformance/lint.mjs conformance/.corpus --fix
+```
+
+All three have to come back with zero differences. If they do not:
+
+- **A new AST difference** is either a fix in oxc that this parser should stop
+  compensating for — check `src/normalize.ts` and `repairRange` in `src/ast.ts`
+  — or a regression to report upstream and, if necessary, work around here.
+- **A new entry in the strictness baseline** needs reading before it is
+  accepted; see above.
+- **Either way, update DIVERGENCES.md.** Its counts and tables are claims about
+  a specific oxc version, and a stale one is worse than none.
 
 ## Benchmark
 
